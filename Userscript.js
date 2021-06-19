@@ -25,10 +25,6 @@ document.getElementById("importDiv").innerHTML += button;
 document.getElementById("importDiv").innerHTML += span;
 document.getElementById("importButton").addEventListener("click", importData);
 
-var domain = "https://www.googleapis.com/books/v1/volumes";
-var parameters = "?maxResults=1&q=";
-var url = domain + parameters;
-
 function importData()
 {
     document.getElementById("importSpan").innerHTML = "Loading...";
@@ -41,7 +37,9 @@ function importData()
         return;
     }
 
-    url += input;
+    var domain = "https://www.googleapis.com/books/v1/volumes";
+    var parameters = "?maxResults=1&q=";
+    var url = domain + parameters + input;
     console.log(url);
 
     GM.xmlHttpRequest({
@@ -54,39 +52,47 @@ function importData()
             var fullTitle = item.subtitle ? item.title + ": " + item.subtitle : item.title;
             var data = [];
 
+            // Get the data from the JSON in the format [ ... [id, value] ...]
             if (mode == "add")
             {
                 data.push(["title", fullTitle]);
-                data.push(["author-0", item.authors[0]]);
-                data.push(["publisher", item.publisher]);
-                data.push(["publish_date", item.publishedDate]);
-                data.push(["id_name", item.industryIdentifiers[0].type.toLowerCase()]);
-                data.push(["id_value", item.industryIdentifiers[0].identifier]);
+                data.push(["author-0", item.authors ? item.authors[0] : null]);
+                data.push(["publisher", item.publisher ? item.publisher : null]);
+                data.push(["publish_date", item.publishedDate ? item.publishedDate : null]);
+                data.push(["id_name", item.industryIdentifiers ? item.industryIdentifiers[0].type.toLowerCase() : null]);
+                data.push(["id_value", item.industryIdentifiers ? item.industryIdentifiers[0].identifier : null]);
             }
             else if (mode == "edit")
             {
                 data.push(["work-title", fullTitle]);
-                data.push(["author-0", item.authors[0]]);
-                data.push(["edition-title", item.title]);
-                data.push(["edition--subtitle", item.subtitle]);
-                data.push(["edition-publishers", item.publisher]);
-                data.push(["edition-publish_date", item.publishedDate]);
-                data.push(["edition-description", item.description]);
-                data.push(["select-id", item.industryIdentifiers[0].type.toLowerCase()]);
-                data.push(["id-value", item.industryIdentifiers[0].identifier]);
-                data.push(["edition--number_of_pages", item.pageCount]);
+                data.push(["author-0", item.authors ? item.authors[0] : null]);
+                data.push(["edition-title", item.title ? item.title : null]);
+                data.push(["edition-subtitle", item.subtitle ? item.subtitle : null]);
+                data.push(["edition-publishers", item.publisher ? item.publisher : null]);
+                data.push(["edition-publish_date", item.publishedDate ? item.publishedDate : null]);
+                data.push(["edition-description", item.description ? item.description : null]);
+                data.push(["select-id", item.industryIdentifiers ? item.industryIdentifiers[0].type.toLowerCase() : null]);
+                data.push(["id-value", item.industryIdentifiers ? item.industryIdentifiers[0].identifier : null]);
+                data.push(["edition--number_of_pages", item.pageCount ? item.pageCount : null]);
             }
             else alert("Error: the current URL does not fit the expected format.");
 
+            // Put the data into the edit form
             for (var i in data)
             {
-                if (data[i][1])
+                if (!data[i][1]) continue;
+                var id = data[i][0];
+                var newValue = data[i][1];
+                console.log(id);
+                var oldValue = document.getElementById(id).value;
+
+                // If a different value that is not an ISBN id already exists in the field
+                if (oldValue && oldValue != newValue && id.indexOf("id") == -1)
                 {
-                    console.log(data[i]);
-                    var id = data[i][0];
-                    var value = data[i][1];
-                    document.getElementById(id).value = value;
+                    var answer = window.confirm(`Change "${oldValue}" to "${newValue}"?`);
+                    if (answer) document.getElementById(id).value = newValue;
                 }
+                else document.getElementById(id).value = newValue;
             }
 
             document.getElementById("importSpan").innerHTML = "Done!";
