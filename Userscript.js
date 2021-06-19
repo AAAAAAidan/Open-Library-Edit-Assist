@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Open Library Import Assist
+// @name         Open Library Edit Assist
 // @namespace    https://greasyfork.org/users/559356
 // @version      1
 // @description  Imports book data into Open Library.
