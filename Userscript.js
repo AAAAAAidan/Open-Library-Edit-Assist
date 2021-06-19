@@ -28,12 +28,15 @@ document.getElementById("importButton").addEventListener("click", importData);
 function importData()
 {
     document.getElementById("importSpan").innerHTML = "Loading...";
+    console.log("Loading...");
     var input = document.getElementById("importInput").value.trim();
+    var error;
 
     if (!input)
     {
-        alert("Error: invalid input.");
-        document.getElementById("importSpan").innerHTML = "Failed!";
+        error = "Error: invalid input"
+        document.getElementById("importSpan").innerHTML = error;
+        console.log(error);
         return;
     }
 
@@ -48,7 +51,16 @@ function importData()
         onload: function(response)
         {
             var json = JSON.parse(response.response);
-            var item = json.items[0].volumeInfo;
+            var item = json.items ? json.items[0].volumeInfo : null;
+
+            if (!item)
+            {
+                error = "Error: no results found";
+                document.getElementById("importSpan").innerHTML = error;
+                console.log(error);
+                return;
+            }
+
             var fullTitle = item.subtitle ? item.title + ": " + item.subtitle : item.title;
             var data = [];
 
@@ -75,7 +87,13 @@ function importData()
                 data.push(["id-value", item.industryIdentifiers ? item.industryIdentifiers[0].identifier : null]);
                 data.push(["edition--number_of_pages", item.pageCount ? item.pageCount : null]);
             }
-            else alert("Error: the current URL does not fit the expected format.");
+            else
+            {
+                error = "Error: the current URL does not fit the expected format";
+                document.getElementById("importSpan").innerHTML = error;
+                console.log(error);
+                return;
+            }
 
             // Put the data into the edit form
             for (var i in data)
@@ -83,7 +101,6 @@ function importData()
                 if (!data[i][1]) continue;
                 var id = data[i][0];
                 var newValue = data[i][1];
-                console.log(id);
                 var oldValue = document.getElementById(id).value;
 
                 // If a different value that is not an ISBN id already exists in the field
@@ -96,6 +113,7 @@ function importData()
             }
 
             document.getElementById("importSpan").innerHTML = "Done!";
+            console.log("Done!");
         }
     });
 }
