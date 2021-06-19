@@ -2,7 +2,7 @@
 // @name         Open Library Edit Assist
 // @namespace    https://greasyfork.org/users/559356
 // @version      1
-// @description  Imports book data into Open Library.
+// @description  Imports book details into the Open Library editor.
 // @author       Aidan
 // @match        https://openlibrary.org/books/add
 // @match        https://openlibrary.org/books/*/edit
@@ -34,7 +34,7 @@ function importData()
 
     if (!input)
     {
-        error = "Error: invalid input"
+        error = "Error: invalid input";
         document.getElementById("importSpan").innerHTML = error;
         console.log(error);
         return;
@@ -106,7 +106,7 @@ function importData()
                 // If a different value that is not an ISBN id already exists in the field
                 if (oldValue && oldValue != newValue && id.indexOf("id") == -1)
                 {
-                    var answer = window.confirm(`Change "${oldValue}" to "${newValue}"?`);
+                    var answer = window.confirm('Change "' + oldValue + '" to "' + newValue + '"?');
                     if (answer) document.getElementById(id).value = newValue;
                 }
                 else document.getElementById(id).value = newValue;
