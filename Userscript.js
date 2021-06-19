@@ -1,149 +1,87 @@
 // ==UserScript==
 // @name         Open Library Import Assist
-// @namespace    http://tampermonkey.net/
-// @version      0.1
-// @description  Open Library editing script.
+// @namespace    https://greasyfork.org/users/559356
+// @version      1
+// @description  Imports book data into Open Library.
 // @author       Aidan
-// @include      https://www.amazon*dp*
-// @include      https://www.amazon*gp*
-// @match        *://*.openlibrary.org/*/add
-// @match        *://*.openlibrary.org/*/edit
+// @match        https://openlibrary.org/books/add
+// @match        https://openlibrary.org/books/*/edit
 // @grant        GM.xmlHttpRequest
 // ==/UserScript==
 
-var button, urlResponse;
-var div = "<div id='userDiv' style='padding:1em 0'></div>";
-var span = "<span id='userSpan' style='margin-left:4px'></span>";
-var appUrl = "https://script.google.com/macros/s/AKfycbz-KGqoUOPojLDELm2LmZ0H3bJZaCe09rto2skl1A/exec";
+var div = "<div id='importDiv' class='input' style='padding-top:1em'></div>";
+var input = "<input id='importInput' class='largest' placeholder='Enter title, ISBN, or Google Books URL' style='width:465px;padding:3px;'/>";
+var button = "<button id='importButton' class='larger' title='Import data from Google Books' style='margin-left:4px'>Import</button>";
+var span = "<span id='importSpan' style='margin-left:4px'></span>";
+
 var currentUrl = window.location.href;
+var mode = currentUrl.replace(/.*\//g, ""); // "add" or "edit"
 
-if (currentUrl.indexOf("amazon") != -1)
+if (mode == "edit") div = div.replace("padding-top:1em", "padding-top:0");
+
+document.getElementById("contentHead").innerHTML += div;
+document.getElementById("importDiv").innerHTML += input;
+document.getElementById("importDiv").innerHTML += button;
+document.getElementById("importDiv").innerHTML += span;
+document.getElementById("importButton").addEventListener("click", importData);
+
+var domain = "https://www.googleapis.com/books/v1/volumes";
+var parameters = "?maxResults=1&q=9781946302236";
+var url = domain + parameters;
+
+function importData()
 {
-    button = "<button id='userBtn' title='Export data to Open Library'>Export data</button>";
-    document.getElementById("titleblock_feature_div").innerHTML += div;
-    document.getElementById("userDiv").innerHTML += button;
-    document.getElementById("userDiv").innerHTML += span;
-    document.getElementById("userBtn").addEventListener("click", exportContent);
-}
-else if (currentUrl.indexOf("openlibrary") != -1)
-{
-    button = "<button id='userBtn' title='Import data from Amazon'>Import data</button>";
-    document.getElementById("contentHead").innerHTML += div;
-    document.getElementById("userDiv").innerHTML += button;
-    document.getElementById("userDiv").innerHTML += span;
-    document.getElementById("userBtn").addEventListener("click", importContent);
-}
+    document.getElementById("importSpan").innerHTML = "Loading...";
 
-function exportContent()
-{
-    document.getElementById("userSpan").innerHTML = "Loading...";
-    var content, col, author, publishDate, format;
-    var title = document.getElementById("productTitle").innerHTML.replace(/\n| \(.*/g, "");
+    console.log(url);
 
-    try
-    {
-        author = document.getElementById("bylineInfo").getElementsByClassName("a-link-normal")[0].innerHTML.replace(/Visit Amazon's | Page/g, "");
-    }
-    catch(e) {}
-
-    if (currentUrl.indexOf("amazon.com") != -1) content = document.getElementById("detail-bullets").getElementsByClassName("content")[0].innerHTML;
-    else if (currentUrl.indexOf("amazon.co.jp") != -1) content = document.getElementById("detail_bullets_id").getElementsByClassName("content")[0].innerHTML;
-
-    content = content.replace(/\n|<b>|<\/b>|<\/li>|<br>/g, "");
-    content = content.split("<li>");
-    content.shift(); // Removes empty value
-    content.pop(); // Removes customer reviews
-
-    for (var i = 0; i < content.length; i++)
-    {
-        content[i] = content[i].split(":");
-        content[i][0] = content[i][0].trim();
-
-        if (content[i][0] == "Publisher")
-        {
-            if (content[i][1].indexOf("(") != -1) publishDate = content[i][1].replace(/.*\(|\).*/g, "");
-        }
-        else if (content[i][0].indexOf("Dimensions") != -1)
-        {
-            var dimensions = content[i][1].split(" x ");
-            for (var j in dimensions) dimensions[j] = dimensions[j].replace("inches", "").trim();
-            dimensions.sort();
-        }
-        else if (content[i].length != 2 || content[i][1].indexOf("pages") != -1)
-        {
-            format = content[i][0];
-            content[i][0] = "Pages";
-            if (content[i].length != 2) content[i].push("");
-        }
-
-        if (content[i].length == 2) content[i][1] = content[i][1].trim().replace(/ pages| \(.*/g, "");
-    }
-
-    if (dimensions)
-    {
-        content.push(["Height", dimensions[2]]);
-        content.push(["Width", dimensions[1]]);
-        content.push(["Depth", dimensions[0]]);
-    }
-
-    content.push(["Title", title]);
-    content.push(["Author", author]);
-    content.push(["Publish Date", publishDate]);
-    content.push(["Format", format]);
-    console.log(content);
-
-    for (var l in content) content[l] = content[l].join("INNER");
-
-    content = content.join("OUTER");
-
-    appUrl += "?content=" + content;
-    urlResponse = getUrlResponse(appUrl);
-}
-
-function importContent()
-{
-    document.getElementById("userSpan").innerHTML = "Loading...";
-    if (appUrl.indexOf("?content=") == -1)
-    {
-        if (currentUrl.indexOf("add") != -1) appUrl += "?content=add";
-        else if (currentUrl.indexOf("edit") != -1) appUrl += "?content=edit";
-    }
-    urlResponse = getUrlResponse(appUrl);
-}
-
-function getUrlResponse(url)
-{
     GM.xmlHttpRequest({
         method: "GET",
         url: url,
         onload: function(response)
         {
-            var urlResponse = response.responseText;
+            var json = JSON.parse(response.response);
+            var item = json.items[0].volumeInfo;
+            var fullTitle = item.subtitle ? item.title + ": " + item.subtitle : item.title;
+            var data = [];
 
-            if (currentUrl.indexOf("openlibrary") != -1)
+            if (mode == "add")
             {
-                urlResponse = urlResponse.split("OUTER");
-                for (var m in urlResponse)
+                data.push(["title", fullTitle]);
+                data.push(["author-0", item.authors[0]]);
+                data.push(["publisher", item.publisher]);
+                data.push(["publish_date", item.publishedDate]);
+                data.push(["id_name", item.industryIdentifiers[0].type.toLowerCase()]);
+                data.push(["id_value", item.industryIdentifiers[0].identifier]);
+            }
+            else if (mode == "edit")
+            {
+                data.push(["work-title", fullTitle]);
+                data.push(["author-0", item.authors[0]]);
+                data.push(["edition-title", item.title]);
+                data.push(["edition--subtitle", item.subtitle]);
+                data.push(["edition-publishers", item.publisher]);
+                data.push(["edition-publish_date", item.publishedDate]);
+                data.push(["edition-description", item.description]);
+                data.push(["select-id", item.industryIdentifiers[0].type.toLowerCase()]);
+                data.push(["id-value", item.industryIdentifiers[0].identifier]);
+                data.push(["edition--number_of_pages", item.pageCount]);
+            }
+            else console.log("Error: the current URL does not fit the expected format.");
+
+            for (var i in data)
+            {
+                if (data[i][1])
                 {
-                    urlResponse[m] = urlResponse[m].split("INNER");
-
-                    if (urlResponse[m][0].indexOf("weight") != -1 && urlResponse[m][1] != "")
-                    {
-                        urlResponse[m][1] = urlResponse[m][1].split(" ");
-                        var radioId = "edition--weight--units--" + urlResponse[m][1][1];
-                        document.getElementById(radioId).checked = true;;
-                        urlResponse[m][1].pop();
-                    }
-
-                    if (urlResponse[m][0].indexOf(",") != -1)
-                    {
-                        urlResponse[m][0] = urlResponse[m][0].split(",");
-                        for (var n in urlResponse[m][0]) document.getElementById(urlResponse[m][0][n]).value = urlResponse[m][1];
-                    }
-                    else if (urlResponse[m][1] != "") document.getElementById(urlResponse[m][0]).value = urlResponse[m][1];
+                    console.log(data[i]);
+                    var id = data[i][0];
+                    var value = data[i][1];
+                    document.getElementById(id).value = value;
                 }
             }
-            document.getElementById("userSpan").innerHTML = "Done!";
+
+            document.getElementById("importSpan").innerHTML = "Done!";
         }
     });
 }
+
