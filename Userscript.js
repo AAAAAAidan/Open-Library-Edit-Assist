@@ -26,13 +26,22 @@ document.getElementById("importDiv").innerHTML += span;
 document.getElementById("importButton").addEventListener("click", importData);
 
 var domain = "https://www.googleapis.com/books/v1/volumes";
-var parameters = "?maxResults=1&q=9781946302236";
+var parameters = "?maxResults=1&q=";
 var url = domain + parameters;
 
 function importData()
 {
     document.getElementById("importSpan").innerHTML = "Loading...";
+    var input = document.getElementById("importInput").value.trim();
 
+    if (!input)
+    {
+        alert("Error: invalid input.");
+        document.getElementById("importSpan").innerHTML = "Failed!";
+        return;
+    }
+
+    url += input;
     console.log(url);
 
     GM.xmlHttpRequest({
@@ -67,7 +76,7 @@ function importData()
                 data.push(["id-value", item.industryIdentifiers[0].identifier]);
                 data.push(["edition--number_of_pages", item.pageCount]);
             }
-            else console.log("Error: the current URL does not fit the expected format.");
+            else alert("Error: the current URL does not fit the expected format.");
 
             for (var i in data)
             {
@@ -84,4 +93,3 @@ function importData()
         }
     });
 }
-
