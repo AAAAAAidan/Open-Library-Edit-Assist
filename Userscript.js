@@ -10,7 +10,7 @@
 // ==/UserScript==
 
 var div = "<div id='importDiv' class='input' style='padding-top:1em'></div>";
-var input = "<input id='importInput' class='largest' placeholder='Enter title, ISBN, or Google Books URL' style='width:465px;padding:3px;'/>";
+var input = "<input id='importInput' class='largest' placeholder='Enter title or ISBN' style='width:465px;padding:3px;'/>";
 var button = "<button id='importButton' class='larger' title='Import data from Google Books' style='margin-left:4px'>Import</button>";
 var span = "<span id='importSpan' style='margin-left:4px'></span>";
 
