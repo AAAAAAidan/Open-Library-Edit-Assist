@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Open Library Edit Assist
 // @namespace    https://greasyfork.org/users/559356
-// @version      1
+// @version      1.0.1
 // @description  Imports book details into the Open Library editor.
 // @author       Aidan
 // @match        https://openlibrary.org/books/add
@@ -25,15 +25,13 @@ document.getElementById("importDiv").innerHTML += button;
 document.getElementById("importDiv").innerHTML += span;
 document.getElementById("importButton").addEventListener("click", importData);
 
-function importData()
-{
+function importData() {
     document.getElementById("importSpan").innerHTML = "Loading...";
     console.log("Loading...");
     var input = document.getElementById("importInput").value.trim();
     var error;
 
-    if (!input)
-    {
+    if (!input) {
         error = "Error: invalid input";
         document.getElementById("importSpan").innerHTML = error;
         console.log(error);
@@ -48,13 +46,11 @@ function importData()
     GM.xmlHttpRequest({
         method: "GET",
         url: url,
-        onload: function(response)
-        {
+        onload: function(response) {
             var json = JSON.parse(response.response);
             var item = json.items ? json.items[0].volumeInfo : null;
 
-            if (!item)
-            {
+            if (!item) {
                 error = "Error: no results found";
                 document.getElementById("importSpan").innerHTML = error;
                 console.log(error);
@@ -65,8 +61,7 @@ function importData()
             var data = [];
 
             // Get the data from the JSON in the format [ ... [id, value] ...]
-            if (mode == "add")
-            {
+            if (mode == "add") {
                 data.push(["title", fullTitle]);
                 data.push(["author-0", item.authors ? item.authors[0] : null]);
                 data.push(["publisher", item.publisher ? item.publisher : null]);
@@ -74,8 +69,7 @@ function importData()
                 data.push(["id_name", item.industryIdentifiers ? item.industryIdentifiers[0].type.toLowerCase() : null]);
                 data.push(["id_value", item.industryIdentifiers ? item.industryIdentifiers[0].identifier : null]);
             }
-            else if (mode == "edit")
-            {
+            else if (mode == "edit") {
                 data.push(["work-title", fullTitle]);
                 data.push(["author-0", item.authors ? item.authors[0] : null]);
                 data.push(["edition-title", item.title ? item.title : null]);
@@ -87,8 +81,7 @@ function importData()
                 data.push(["id-value", item.industryIdentifiers ? item.industryIdentifiers[0].identifier : null]);
                 data.push(["edition--number_of_pages", item.pageCount ? item.pageCount : null]);
             }
-            else
-            {
+            else {
                 error = "Error: the current URL does not fit the expected format";
                 document.getElementById("importSpan").innerHTML = error;
                 console.log(error);
@@ -96,16 +89,15 @@ function importData()
             }
 
             // Put the data into the edit form
-            for (var i in data)
-            {
+            for (var i in data) {
                 if (!data[i][1]) continue;
+
                 var id = data[i][0];
                 var newValue = data[i][1];
                 var oldValue = document.getElementById(id).value;
 
                 // If a different value that is not an ISBN id already exists in the field
-                if (oldValue && oldValue != newValue && id.indexOf("id") == -1)
-                {
+                if (oldValue && oldValue != newValue && id.indexOf("id") == -1) {
                     var answer = window.confirm('Change "' + oldValue + '" to "' + newValue + '"?');
                     if (answer) document.getElementById(id).value = newValue;
                 }
